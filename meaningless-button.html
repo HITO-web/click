@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>押すほど意味がなくなるボタン</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@300;400;700;900&family=Space+Mono&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0e0e0e;
+    --text: #d4d0c8;
+    --accent: #ff4e00;
+    --muted: #555;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  .title {
+    font-size: clamp(0.8rem, 2.5vw, 1.1rem);
+    font-weight: 300;
+    letter-spacing: 0.3em;
+    color: #333;
+    margin-bottom: 3rem;
+    text-align: center;
+    transition: opacity 1.5s ease;
+  }
+
+  .stage {
+    width: 400px;
+    height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .stage::before {
+    content: '';
+    position: absolute;
+    width: 280px;
+    height: 280px;
+    border-radius: 50%;
+    border: 1px dashed #252525;
+    animation: spin 20s linear infinite;
+    pointer-events: none;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #btn {
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    transition: box-shadow 0.08s ease;
+    position: relative;
+    transform-origin: center center;
+    box-shadow: 0 0 50px rgba(255,78,0,0.5), 0 0 100px rgba(255,78,0,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #btn:hover { box-shadow: 0 0 70px rgba(255,78,0,0.8), 0 0 130px rgba(255,78,0,0.3); }
+  #btn:active { transform: scale(0.93); }
+
+  .lower {
+    margin-top: 2.5rem;
+    text-align: center;
+    width: min(540px, 90vw);
+    min-height: 9rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 1rem;
+  }
+
+  .stats {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    color: #282828;
+    letter-spacing: 0.15em;
+    transition: opacity 0.5s;
+  }
+
+  /* メインメッセージ：大きく・太く */
+  .message {
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    font-size: clamp(1.7rem, 5.5vw, 2.8rem);
+    font-weight: 900;
+    color: var(--text);
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+    text-align: center;
+    transition: opacity 0.2s, color 0.8s;
+    text-shadow: 0 2px 40px rgba(212,208,200,0.06);
+    min-height: 1.4em;
+    opacity: 0;
+  }
+
+  /* サブメッセージ：小さく・皮肉感・斜体 */
+  .sub {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.78rem;
+    color: #484848;
+    letter-spacing: 0.2em;
+    text-align: center;
+    font-style: italic;
+    transition: opacity 0.4s;
+    min-height: 1.2em;
+    opacity: 0;
+    line-height: 1.9;
+  }
+
+  /* エンディング */
+  .gone-msg {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 1.2rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 2s ease;
+  }
+
+  .gone-msg.show { opacity: 1; pointer-events: all; }
+
+  .gone-msg .end-main {
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    font-size: clamp(1.1rem, 3.5vw, 1.8rem);
+    font-weight: 700;
+    color: #272727;
+    letter-spacing: 0.22em;
+    text-align: center;
+    line-height: 2;
+  }
+
+  .gone-msg .end-sub {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.62rem;
+    color: #1e1e1e;
+    letter-spacing: 0.35em;
+    font-style: italic;
+  }
+
+  #reset {
+    margin-top: 2rem;
+    background: transparent;
+    border: 1px solid #222;
+    color: #2e2e2e;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
+    padding: 0.7em 1.6em;
+    cursor: pointer;
+    transition: border-color 0.3s, color 0.3s;
+  }
+  #reset:hover { border-color: var(--accent); color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="title" id="title">押すほど意味がなくなるボタン</div>
+
+<div class="stage">
+  <button id="btn">押す</button>
+</div>
+
+<div class="lower">
+  <div class="stats" id="stats">押した回数: <span id="count">0</span> &nbsp;/&nbsp; 残り意味: <span id="meaning">100</span>%</div>
+  <div class="message" id="message"></div>
+  <div class="sub" id="sub"></div>
+</div>
+
+<div class="gone-msg" id="gone">
+  <div class="end-main">
+    ボタンは消えた<br>
+    問いだけが残った
+  </div>
+  <div class="end-sub">それが、あなたの答えだったのかもしれない</div>
+  <button id="reset">もう一度問い直す（問いは変わらない）</button>
+</div>
+
+<script>
+  const btn       = document.getElementById('btn');
+  const countEl   = document.getElementById('count');
+  const meaningEl = document.getElementById('meaning');
+  const msgEl     = document.getElementById('message');
+  const subEl     = document.getElementById('sub');
+  const goneEl    = document.getElementById('gone');
+  const titleEl   = document.getElementById('title');
+  const statsEl   = document.getElementById('stats');
+
+  const MAX = 100;
+
+  // [clicks, メインメッセージ, サブメッセージ]
+  const messages = [
+    [1,   "行為は存在を証明しない",       "それでも人は押す"],
+    [3,   "自由とは選択の重さである",     "— サルトル"],
+    [5,   "反復は意味を生まない",         "意味は解釈から生まれる"],
+    [7,   "あなたは今、何者であるか",     "押す者か、押される者か"],
+    [9,   "目的なき行為を、習慣と呼ぶ",  "習慣なき行為を、衝動と呼ぶ"],
+    [12,  "不条理を直視せよ",             "— カミュ"],
+    [15,  "なぜ押すのか",                 "「なぜ」を問えることが、人間の呪いだ"],
+    [18,  "シジュフォスは幸福であったか", "岩を転がし続けた男の話"],
+    [21,  "欲望は満たされた瞬間に死ぬ",  "だからボタンは消えていく"],
+    [24,  "存在することは、苦である",     "— ショーペンハウアー"],
+    [27,  "意志は世界の本質ではないか",   "それとも、ただの幻想か"],
+    [30,  "行動の意味は行動の外にある",   "あなたはまだ外に出ていない"],
+    [33,  "時間とは何か",                 "押すたびに過去が増える"],
+    [36,  "過去は変えられない",           "しかし解釈は変えられる"],
+    [39,  "それを変える気があるか",       "沈黙"],
+    [42,  "永劫回帰を望むか",             "— ニーチェ"],
+    [45,  "この瞬間を、無限に繰り返せるか","押し続けながら、答えよ"],
+    [48,  "自己欺瞞は快楽に似ている",     "— ボーヴォワール"],
+    [51,  "見ているものが現実とは限らない","ボタンはまだそこにある、のか"],
+    [54,  "認識とは対象を変える行為だ",   "あなたが見ることで、縮んでいる"],
+    [57,  "不安は自由の証明である",       "— キルケゴール"],
+    [60,  "止まることへの恐怖か",         "続けることへの依存か"],
+    [63,  "どちらも、逃げである",         "哲学は優しくない"],
+    [66,  "言語は存在の家である",         "— ハイデガー"],
+    [69,  "「押す」という言葉が消えても", "行為は続く"],
+    [72,  "沈黙の中に、本質が宿る",       "あなたは今、沈黙に近づいている"],
+    [75,  "見えないものが、見えるものより重い","愛、死、そしてボタン"],
+    [78,  "終わりを知らずに始めた者よ",   "これが、終わりだ"],
+    [81,  "コギト・エルゴ・スム",         "押す、ゆえに我あり"],
+    [84,  "しかし押すことをやめたとき",   "我は何者か"],
+    [87,  "空白の中にこそ、答えがある",   "老子"],
+    [90,  "無為にして為さざるはなし",     "何もしないことで、すべてが成る"],
+    [93,  "ボタンは問いであった",         "あなたは答えたか"],
+    [96,  "…",                           "意味は、もともとなかったのかもしれない"],
+    [99,  "　",                           ""],
+  ];
+
+  let clicks = 0;
+  const BASE_SIZE = 200;
+  btn.style.width  = BASE_SIZE + 'px';
+  btn.style.height = BASE_SIZE + 'px';
+
+  btn.addEventListener('click', () => {
+    clicks++;
+    countEl.textContent   = clicks;
+
+    const progress  = clicks / MAX;
+    const remaining = Math.max(0, Math.round((1 - progress) * 100));
+    meaningEl.textContent = remaining;
+
+    const scale = Math.max(0, 1 - progress);
+    const size  = BASE_SIZE * scale;
+
+    btn.style.width        = size + 'px';
+    btn.style.height       = size + 'px';
+    btn.style.fontSize     = (scale * 1.4) + 'rem';
+    btn.style.borderRadius = '50%';
+    btn.style.opacity      = scale;
+    btn.style.boxShadow    = `0 0 ${50*scale}px rgba(255,78,0,${0.5*scale}), 0 0 ${100*scale}px rgba(255,78,0,${0.2*scale})`;
+
+    titleEl.style.opacity = Math.max(0, 1 - progress * 1.4);
+    statsEl.style.opacity = Math.max(0, 0.35 - progress * 0.4);
+
+    // メッセージ opacity: 序盤に現れ、ずっと見える、終盤フェード
+    let msgOpacity;
+    if (progress < 0.15) {
+      msgOpacity = progress / 0.15;
+    } else if (progress < 0.7) {
+      msgOpacity = 1;
+    } else {
+      msgOpacity = Math.max(0, 1 - (progress - 0.7) / 0.3);
+    }
+
+    const matched = messages.filter(([n]) => n <= clicks);
+    if (matched.length) {
+      const [, main, sub] = matched[matched.length - 1];
+      msgEl.textContent  = main;
+      subEl.textContent  = sub;
+      msgEl.style.opacity = msgOpacity;
+      subEl.style.opacity = msgOpacity * 0.7;
+
+      // 後半になるとメッセージが赤みを帯びる
+      if (progress > 0.45) {
+        const t = Math.min(1, (progress - 0.45) / 0.4);
+        const r = Math.round(212 + (200 - 212) * t + 43 * t);
+        const g = Math.round(208 * (1 - t * 0.85));
+        const b = Math.round(200 * (1 - t * 0.9));
+        msgEl.style.color = `rgb(${r},${g},${b})`;
+      } else {
+        msgEl.style.color = 'var(--text)';
+      }
+    }
+
+    if (clicks >= MAX) {
+      btn.style.visibility    = 'hidden';
+      btn.style.pointerEvents = 'none';
+      msgEl.style.opacity     = 0;
+      subEl.style.opacity     = 0;
+      setTimeout(() => goneEl.classList.add('show'), 800);
+    }
+  });
+
+  document.getElementById('reset').addEventListener('click', () => {
+    clicks = 0;
+    countEl.textContent   = 0;
+    meaningEl.textContent = 100;
+    msgEl.textContent     = '';
+    subEl.textContent     = '';
+    msgEl.style.color     = 'var(--text)';
+    msgEl.style.opacity   = 0;
+    subEl.style.opacity   = 0;
+    btn.style.width       = BASE_SIZE + 'px';
+    btn.style.height      = BASE_SIZE + 'px';
+    btn.style.fontSize    = '1.4rem';
+    btn.style.borderRadius = '50%';
+    btn.style.opacity     = 1;
+    btn.style.boxShadow   = '0 0 50px rgba(255,78,0,0.5), 0 0 100px rgba(255,78,0,0.2)';
+    btn.style.visibility  = 'visible';
+    btn.style.pointerEvents = 'auto';
+    titleEl.style.opacity = 1;
+    statsEl.style.opacity = 1;
+    goneEl.classList.remove('show');
+  });
+</script>
+</body>
+</html>
